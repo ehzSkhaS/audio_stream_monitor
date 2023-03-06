@@ -159,9 +159,47 @@ class StreamMonitor:
     def testing(self):
         for i in self.ffmpeg_peak_level():
             if i['peak_ch1'] != '-inf':
-                print(i['peak_ch1'] + ((11 - len(i['peak_ch1'])) * ' ') + 'dB', int((float(i['peak_ch1']) + 96)/2) * '-')
+                f_ch1 = round(float(i['peak_ch1']))
+                _96db = 0 # 96 - 83 O
+                _83db = 0 # 83 - 18 #
+                _18db = 0 # 18 -  6 +
+                _6db = 0 #  6 -  0 -
+                if f_ch1 >= -6:
+                    _96db = 13
+                    _83db = 65
+                    _18db = 12
+                    _6db = 6 + f_ch1
+                elif f_ch1 >= -18:
+                    _96db = 13
+                    _83db = 65
+                    _18db = 18 + f_ch1
+                elif f_ch1 >= -83:                    
+                    _96db = 13
+                    _83db = 83 + f_ch1
+                elif f_ch1 >= -96:
+                    _96db = 96 + f_ch1                
+                print(i['peak_ch1'] + ((11 - len(i['peak_ch1'])) * ' ') + 'CH1 dB', _96db*'O' + _83db*'#' + _18db*'+' + _6db*'-')
             if i['peak_ch2'] != '-inf':
-                print(i['peak_ch2'] + ((11 - len(i['peak_ch2'])) * ' ') + 'dB', int((float(i['peak_ch2']) + 96)/2) * '+')
+                f_ch2 = round(float(i['peak_ch2']))
+                _96db = 0 # 96 - 83 O
+                _83db = 0 # 83 - 18 #
+                _18db = 0 # 18 -  6 +
+                _6db = 0 #  6 -  0 -
+                if f_ch2 >= -6:
+                    _96db = 13
+                    _83db = 65
+                    _18db = 12
+                    _6db = 6 + f_ch2
+                elif f_ch2 >= -18:
+                    _96db = 13
+                    _83db = 65
+                    _18db = 18 + f_ch2
+                elif f_ch2 >= -83:
+                    _96db = 13
+                    _83db = 83 + f_ch2
+                elif f_ch2 >= -96:
+                    _96db = 96 + f_ch2
+                print(i['peak_ch2'] + ((11 - len(i['peak_ch2'])) * ' ') + 'CH2 dB',  _96db*'O' + _83db*'#' + _18db*'+' + _6db*'-')
 
 
 def main():
