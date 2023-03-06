@@ -159,17 +159,14 @@ class StreamMonitor:
     def testing(self):
         for i in self.ffmpeg_peak_level():
             if i['peak_ch1'] != '-inf':
-                print(int(float(i['peak_ch1']) + 50) * '-')
+                print(i['peak_ch1'] + ((11 - len(i['peak_ch1'])) * ' ') + 'dB', int((float(i['peak_ch1']) + 96)/2) * '-')
             if i['peak_ch2'] != '-inf':
-                print(int(float(i['peak_ch2']) + 50) * '+')
-            
-            # print(ch1)
-            # print(int(ch1))
-            # print(int(float(i['peak_ch2']) + 50) * '+')
+                print(i['peak_ch2'] + ((11 - len(i['peak_ch2'])) * ' ') + 'dB', int((float(i['peak_ch2']) + 96)/2) * '+')
 
 
 def main():
-    monitor = StreamMonitor("https://icecast.teveo.cu/b3jbfThq")    
+    monitor = StreamMonitor("https://icecast.teveo.cu/7NgVjcqX")  # vitral   
+    # monitor = StreamMonitor("https://icecast.teveo.cu/b3jbfThq")  # radio reloj  
     
     monitor.testing()
     
