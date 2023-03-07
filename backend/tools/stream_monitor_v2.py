@@ -156,57 +156,53 @@ class StreamMonitor:
                 yield r_dict
                 
                 
-    def testing(self):
+    def peak_bars(self):
+        ######################################################################################################
+        # | -96 db     | -83 db                                                         | -18 db    | -6 db  #
+        # OOOOOOOOOOOOO#################################################################++++++++++++------   #
+        # | 13 char    | 65 char                                                        | 12 char   | 6 char #
+        # |         13 |                                                             78 |        90 |   96   #
+        ######################################################################################################
+        peak_note_ch1, iter_ch1 = 0, 0
+        peak_note_ch2, iter_ch2 = 0, 0
+        bar_sample = 'OOOOOOOOOOOOO#################################################################++++++++++++------'
         for i in self.ffmpeg_peak_level():
+            print('                  -96 dB       -83 dB                                                           -18 dB      -6 dB ')
             if i['peak_ch1'] != '-inf':
-                f_ch1 = round(float(i['peak_ch1']))
-                _96db = 0 # 96 - 83 O
-                _83db = 0 # 83 - 18 #
-                _18db = 0 # 18 -  6 +
-                _6db = 0 #  6 -  0 -
-                if f_ch1 >= -6:
-                    _96db = 13
-                    _83db = 65
-                    _18db = 12
-                    _6db = 6 + f_ch1
-                elif f_ch1 >= -18:
-                    _96db = 13
-                    _83db = 65
-                    _18db = 18 + f_ch1
-                elif f_ch1 >= -83:                    
-                    _96db = 13
-                    _83db = 83 + f_ch1
-                elif f_ch1 >= -96:
-                    _96db = 96 + f_ch1                
-                print(i['peak_ch1'] + ((11 - len(i['peak_ch1'])) * ' ') + 'CH1 dB', _96db*'O' + _83db*'#' + _18db*'+' + _6db*'-')
+                str_ch1 = i['peak_ch1']
+                f_ch1 = 96 + round(float(str_ch1))
+                bs_ch1 = bar_sample[:f_ch1]
+                
+                if f_ch1 >= peak_note_ch1 or not iter_ch1:
+                    peak_note_ch1 = f_ch1
+                    iter_ch1 = 10
+                    bs_ch1 = bs_ch1[:peak_note_ch1] + '|' + bs_ch1[peak_note_ch1 + 1:]
+                elif iter_ch1:
+                    iter_ch1 -= 1
+                    bs_ch1 = bs_ch1[:f_ch1] + (peak_note_ch1 - f_ch1 - 1) * ' ' + '|' + bs_ch1[peak_note_ch1 + 1:]
+                    
+                print(str_ch1 + ((11 - len(str_ch1)) * ' ') + 'CH1 dB', bs_ch1)
             if i['peak_ch2'] != '-inf':
-                f_ch2 = round(float(i['peak_ch2']))
-                _96db = 0 # 96 - 83 O
-                _83db = 0 # 83 - 18 #
-                _18db = 0 # 18 -  6 +
-                _6db = 0 #  6 -  0 -
-                if f_ch2 >= -6:
-                    _96db = 13
-                    _83db = 65
-                    _18db = 12
-                    _6db = 6 + f_ch2
-                elif f_ch2 >= -18:
-                    _96db = 13
-                    _83db = 65
-                    _18db = 18 + f_ch2
-                elif f_ch2 >= -83:
-                    _96db = 13
-                    _83db = 83 + f_ch2
-                elif f_ch2 >= -96:
-                    _96db = 96 + f_ch2
-                print(i['peak_ch2'] + ((11 - len(i['peak_ch2'])) * ' ') + 'CH2 dB',  _96db*'O' + _83db*'#' + _18db*'+' + _6db*'-')
+                str_ch2 = i['peak_ch2']
+                f_ch2 = 96 + round(float(str_ch2))
+                bs_ch2 = bar_sample[:f_ch2]
+                
+                if f_ch2 >= peak_note_ch2 or not iter_ch2:
+                    peak_note_ch2 = f_ch2
+                    iter_ch2 = 10
+                    bs_ch2 = bs_ch2[:peak_note_ch2] + '|' + bs_ch2[peak_note_ch2 + 1:]
+                elif iter_ch2:
+                    iter_ch2 -= 1
+                    bs_ch2 = bs_ch2[:f_ch2] + (peak_note_ch2 - f_ch2 - 1) * ' ' + '|' + bs_ch2[peak_note_ch2 + 1:]
+                    
+                print(str_ch2 + ((11 - len(str_ch2)) * ' ') + 'CH2 dB', bs_ch2)
 
 
 def main():
     monitor = StreamMonitor("https://icecast.teveo.cu/7NgVjcqX")  # vitral   
     # monitor = StreamMonitor("https://icecast.teveo.cu/b3jbfThq")  # radio reloj  
     
-    monitor.testing()
+    monitor.peak_bars()
     
     # for i in monitor.ffmpeg_max_level():
     #     print(i)
