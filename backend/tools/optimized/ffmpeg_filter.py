@@ -114,6 +114,7 @@ class FFmpegFilter:
             p1 = i.find('1.Peak_level=')
             p2 = i.find('2.Peak_level=')
             e1 = i.find('HTTP error 404')
+            e2 = i.find('Error in the pull function')
             if p1 != -1:
                 peaks['peak_ch1'] = i[p1 + 13: -1]
             if p2 != -1:
@@ -121,6 +122,8 @@ class FFmpegFilter:
                 yield peaks
             if e1 != -1:
                 yield 404
+            if e2 != -1:
+                yield 500
 
     def ffmpeg_volume_detect(self, url=''):
         for i in self.__ffmpeg_output_capture(self.__ffmpeg_cmd_filters.get('volume_detect'), url):

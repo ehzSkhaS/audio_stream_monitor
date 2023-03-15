@@ -8,15 +8,20 @@ import stream_visualizator
 
 
 class WorkerThread(threading.Thread):
-
-    def __init__(self):
+    def __init__(self, vu_obj, y_pos, x_pos, url, jump):
         threading.Thread.__init__(self)
-        self.peak_bars_threads = []
-        # self.screen_scroll_thread
+        self.__vu = vu_obj
+        self.__y_pos = y_pos
+        self.__x_pos = x_pos
+        self.__url = url
+        self.__jump = jump
+
+    def run(self):
+        self.__vu.peak_bars(self.__y_pos, self.__x_pos, self.__url, self.__jump)
 
 
 def main(stdscr, args):
-    vu = stream_visualizator.StreamVisualizator()
+    vu = stream_visualizator.StreamVisualizator(stdscr)
     thread_pool = []
     url_l = [
         "https://icecast.teveo.cu/7NgVjcqX",
@@ -28,8 +33,15 @@ def main(stdscr, args):
         "https://icecast.teveo.cu/9Rnrbjzq",
         "https://icecast.teveo.cu/3MCwWg3V",
         "https://icecast.teveo.cu/Jdq3Rbrg",
-        "https://icecast.teveo.cu/g73XCjCH"
-        # "https://icecast.teveo.cu/ngcdcV3k",
+        "https://icecast.teveo.cu/g73XCjCH",
+        "https://icecast.teveo.cu/ngcdcV3k",
+        "https://icecast.teveo.cu/dXhtHs4P",
+        "https://icecast.teveo.cu/9HzjRcjX",
+        "https://icecast.teveo.cu/Rsrm7P9h",
+        "https://icecast.teveo.cu/LsxKNz7b",
+        "https://icecast.teveo.cu/TsxMM94R",
+        "https://icecast.teveo.cu/CL7jRXqn",
+        "https://icecast.teveo.cu/NqWrgw7j",
     ]
 
     source = ''
@@ -39,28 +51,43 @@ def main(stdscr, args):
     if args['jump']:
         jump = args['jump']
 
-    y_pos = 0
-    for i in url_l:
-        thread_pool.append(
-            threading.Thread(
-                target=vu.peak_bars,
-                args=[y_pos, 0, i, jump]
-            )
-        )
-        y_pos += 5
-
     try:
-        for i in thread_pool:
-            i.start()
-            time.sleep(1)
+        # y_pos = 0
+        # for i in url_l:
+        #     thread_pool.append(
+        #         threading.Thread(
+        #             target=vu.peak_bars,
+        #             args=[y_pos, 0, i, jump],
+        #         )
+        #     )
+        #     thread_pool[-1].start()
+        #     y_pos += 5
+        #     time.sleep(1)
 
-        while True:
-            for i in vu.win_list:
-                if i.is_wintouched():
-                    i.refresh()
+        win_index = 0
+        for i in url_l:
+            win_pos = vu.calc_pos(win_index)
+            if win_pos:
+                stdscr.addstr(win_pos[0], win_pos[1], f'Loading... {i}')
+                stdscr.refresh()
+                thread_pool.append(
+                    threading.Thread(
+                        target=vu.peak_bars,
+                        args=[win_pos[0], win_pos[1], i, jump],
+                    )
+                )
+                thread_pool[-1].start()
+                win_index += 1
+                time.sleep(1)
+            else:
+                break
+
+        twr = threading.Thread(target=vu.win_refresh)
+        twr.start()
+
+        # tis = threading.Thread(target=vu.input_stream)
+        # tis.start()
     except KeyboardInterrupt:
-        for i in thread_pool:
-            i.join()
         curses.endwin()
 
 
