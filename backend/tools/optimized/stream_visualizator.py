@@ -123,13 +123,14 @@ class StreamVisualizator:
             self.peak_bars(y_pos, x_pos, url)
 
     def win_refresh(self):
-        while True:
-            for i in self.win_list:
-                if i.is_wintouched():
-                    i.refresh()
+        if len(self.win_list):
+            while True:
+                for i in self.win_list:
+                    if i.is_wintouched():
+                        i.refresh()
 
     def calc_pos(self, win_index):
-        if self.bar_height_amount and self.bar_width_amount:
+        if self.screen_height >= self.BAR_ROWS and self.screen_width >= self.BAR_COLS:
             if win_index < self.bar_height_amount:
                 return (win_index * self.BAR_ROWS, 0)
             else:
@@ -138,6 +139,8 @@ class StreamVisualizator:
                     return ((win_index % self.bar_height_amount) * self.BAR_ROWS, tmp_row * self.BAR_COLS)
                 else:
                     return None
+        else:
+            return None
 
     def input_stream(self):
         while True:

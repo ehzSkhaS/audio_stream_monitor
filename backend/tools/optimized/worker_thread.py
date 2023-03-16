@@ -23,49 +23,38 @@ class WorkerThread(threading.Thread):
 def main(stdscr, args):
     vu = stream_visualizator.StreamVisualizator(stdscr)
     thread_pool = []
-    url_l = [
-        "https://icecast.teveo.cu/7NgVjcqX",
-        "https://icecast.teveo.cu/b3jbfThq",
-        "https://icecast.teveo.cu/McW3fLhs",
-        "https://icecast.teveo.cu/zrXXWK9F",
-        "https://icecast.teveo.cu/XjfW7qWN",
-        "https://icecast.teveo.cu/Nbtz7HT3",
-        "https://icecast.teveo.cu/9Rnrbjzq",
-        "https://icecast.teveo.cu/3MCwWg3V",
-        "https://icecast.teveo.cu/Jdq3Rbrg",
-        "https://icecast.teveo.cu/g73XCjCH",
-        "https://icecast.teveo.cu/ngcdcV3k",
-        "https://icecast.teveo.cu/dXhtHs4P",
-        "https://icecast.teveo.cu/9HzjRcjX",
-        "https://icecast.teveo.cu/Rsrm7P9h",
-        "https://icecast.teveo.cu/LsxKNz7b",
-        "https://icecast.teveo.cu/TsxMM94R",
-        "https://icecast.teveo.cu/CL7jRXqn",
-        "https://icecast.teveo.cu/NqWrgw7j",
-    ]
 
     source = ''
     jump = 0
     if args['source']:
         source = args['source']
+    else:
+        source = [
+            "https://icecast.teveo.cu/7NgVjcqX",
+            "https://icecast.teveo.cu/b3jbfThq",
+            "https://icecast.teveo.cu/McW3fLhs",
+            "https://icecast.teveo.cu/zrXXWK9F",
+            "https://icecast.teveo.cu/XjfW7qWN",
+            "https://icecast.teveo.cu/Nbtz7HT3",
+            "https://icecast.teveo.cu/9Rnrbjzq",
+            "https://icecast.teveo.cu/3MCwWg3V",
+            "https://icecast.teveo.cu/Jdq3Rbrg",
+            "https://icecast.teveo.cu/g73XCjCH",
+            "https://icecast.teveo.cu/ngcdcV3k",
+            "https://icecast.teveo.cu/dXhtHs4P",
+            "https://icecast.teveo.cu/9HzjRcjX",
+            "https://icecast.teveo.cu/Rsrm7P9h",
+            "https://icecast.teveo.cu/LsxKNz7b",
+            "https://icecast.teveo.cu/TsxMM94R",
+            "https://icecast.teveo.cu/CL7jRXqn",
+            "https://icecast.teveo.cu/NqWrgw7j",
+        ]
     if args['jump']:
         jump = args['jump']
 
     try:
-        # y_pos = 0
-        # for i in url_l:
-        #     thread_pool.append(
-        #         threading.Thread(
-        #             target=vu.peak_bars,
-        #             args=[y_pos, 0, i, jump],
-        #         )
-        #     )
-        #     thread_pool[-1].start()
-        #     y_pos += 5
-        #     time.sleep(1)
-
         win_index = 0
-        for i in url_l:
+        for i in source:
             win_pos = vu.calc_pos(win_index)
             if win_pos:
                 stdscr.addstr(win_pos[0], win_pos[1], f'Loading... {i}')
@@ -88,6 +77,8 @@ def main(stdscr, args):
         # tis = threading.Thread(target=vu.input_stream)
         # tis.start()
     except KeyboardInterrupt:
+        for i in vu.win_list:
+            del i
         curses.endwin()
 
 
@@ -104,6 +95,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "-s",
         "--source",
+        nargs='+',
+        default=[],
         metavar='AUDIO_STREAM',
         type=str,
         help='url or path to an audio stream or file'
