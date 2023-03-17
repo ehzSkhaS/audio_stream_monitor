@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import csv
+import sys
 import time
 import curses
 import argparse
@@ -24,31 +26,20 @@ def main(stdscr, args):
     vu = stream_visualizator.StreamVisualizator(stdscr)
     thread_pool = []
 
-    source = ''
+    source = []
     jump = 0
     if args['source']:
         source = args['source']
     else:
-        source = [
-            "https://icecast.teveo.cu/7NgVjcqX",
-            "https://icecast.teveo.cu/b3jbfThq",
-            "https://icecast.teveo.cu/McW3fLhs",
-            "https://icecast.teveo.cu/zrXXWK9F",
-            "https://icecast.teveo.cu/XjfW7qWN",
-            "https://icecast.teveo.cu/Nbtz7HT3",
-            "https://icecast.teveo.cu/9Rnrbjzq",
-            "https://icecast.teveo.cu/3MCwWg3V",
-            "https://icecast.teveo.cu/Jdq3Rbrg",
-            "https://icecast.teveo.cu/g73XCjCH",
-            "https://icecast.teveo.cu/ngcdcV3k",
-            "https://icecast.teveo.cu/dXhtHs4P",
-            "https://icecast.teveo.cu/9HzjRcjX",
-            "https://icecast.teveo.cu/Rsrm7P9h",
-            "https://icecast.teveo.cu/LsxKNz7b",
-            "https://icecast.teveo.cu/TsxMM94R",
-            "https://icecast.teveo.cu/CL7jRXqn",
-            "https://icecast.teveo.cu/NqWrgw7j",
-        ]
+        try:
+            with open('data.csv', newline='') as source_data:
+                for row in csv.DictReader(source_data):
+                    source.append('https://icecast.teveo.cu/' + row['url'])
+        except IOError as error:
+            stdscr.addstr(0, 0, str(error))
+            stdscr.refresh()
+            curses.napms(3000)
+            sys.exit(0)
     if args['jump']:
         jump = args['jump']
 
@@ -74,12 +65,14 @@ def main(stdscr, args):
         twr = threading.Thread(target=vu.win_refresh)
         twr.start()
 
-        # tis = threading.Thread(target=vu.input_stream)
-        # tis.start()
+        tis = threading.Thread(target=vu.input_stream)
+        tis.start()
     except KeyboardInterrupt:
         for i in vu.win_list:
             del i
+        # curses.reset_shell_mode()
         curses.endwin()
+        sys.exit(0)
 
 
 if __name__ == "__main__":
@@ -112,5 +105,7 @@ if __name__ == "__main__":
 
     if args.values():
         curses.wrapper(main, args)
+        # curses.def_shell_mode()
     else:
         curses.wrapper(main, '')
+        # curses.def_shell_mode()
