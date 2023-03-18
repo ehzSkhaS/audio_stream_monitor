@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-import time
 import curses
-
 import ffmpeg_filter
 
 
@@ -14,24 +12,24 @@ class StreamVisualizator:
     UP = -1
     DOWN = 1
 
-    def __init__(self, screen):
-        self.ffmpeg = ffmpeg_filter.FFmpegFilter()
+    def __init__(self, screen) -> None:
+        screen.keypad(True)
         self.win_data = []
+        self.ffmpeg = ffmpeg_filter.FFmpegFilter()
+        self.screen = screen
+        self.screen_height, self.screen_width = screen.getmaxyx()
+        self.bar_height_amount = self.screen_height // self.BAR_ROWS
+        self.bar_width_amount = self.screen_width // self.BAR_COLS
         curses.curs_set(0)
         curses.noecho()
-        curses.cbreak()
+        # curses.cbreak()
         curses.start_color()
         curses.use_default_colors()
 
         for i in range(curses.COLORS):
             curses.init_pair(i + 1, i, -1)
 
-        self.screen = screen
-        self.screen_height, self.screen_width = screen.getmaxyx()
-        self.bar_height_amount = self.screen_height // self.BAR_ROWS
-        self.bar_width_amount = self.screen_width // self.BAR_COLS
-
-    def create_win(self, y_pos, x_pos, url):
+    def create_win(self, y_pos, x_pos, url) -> dict:
         win_url_dict = {
             'win': curses.newwin(self.BAR_ROWS, self.BAR_COLS, y_pos, x_pos),
             'url': url,
@@ -43,7 +41,7 @@ class StreamVisualizator:
         self.win_data.append(win_url_dict)
         return win_url_dict
 
-    def fill_win(self, win_url_dict, data):
+    def fill_win(self, win_url_dict, data) -> None:
         win = win_url_dict['win']
         url = win_url_dict['url']
         ch_peak_sample = win_url_dict['peaks']
@@ -118,14 +116,13 @@ class StreamVisualizator:
                 else:
                     win.addstr(k + 2, 0, 'SILENCE')
 
-    def win_refresh(self):
-        if len(self.win_data):
-            while True:
-                for i in self.win_data:
-                    if i['win'].is_wintouched():
-                        i['win'].refresh()
+    def win_refresh(self) -> None:
+        while len(self.win_data):
+            for i in self.win_data:
+                if i['win'].is_wintouched():
+                    i['win'].refresh()
 
-    def calc_pos(self, win_index):
+    def calc_pos(self, win_index) -> tuple:
         if self.screen_height >= self.BAR_ROWS and self.screen_width >= self.BAR_COLS:
             if win_index < self.bar_height_amount:
                 return (win_index * self.BAR_ROWS, 0)
@@ -138,24 +135,19 @@ class StreamVisualizator:
         else:
             return None
 
-    def input_stream(self, thread_pool):
+    def capture_input(self, thread_pool) -> None:
         while True:
             ch = self.screen.getch()
-            if ch == curses.KEY_UP:
-                self.scroll(self.UP)
-            elif ch == curses.KEY_DOWN:
-                self.scroll(self.DOWN)
-            elif ch == curses.KEY_BACKSPACE:
+            if ch == 0x1b or ch == 0x51 or ch == 0x71:
                 for i in thread_pool:
+                    self.win_data.remove(i.get_win())
                     i.stop()
-                    time.sleep(3)
-                    if i.stopped():
-                        i.join()
-
+                    i.join()
+                self.screen.keypad(False)
+                # curses.nocbreak()
                 curses.echo()
-                curses.nocbreak()
                 curses.endwin()
 
-    def scroll(self, scroll_dir):
+    def scroll(self, scroll_dir) -> None:
         for i in self.win_list:
             i.scroll(scroll_dir)
