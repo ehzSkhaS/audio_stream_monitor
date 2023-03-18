@@ -122,16 +122,14 @@ class StreamVisualizator:
                 if i['win'].is_wintouched():
                     i['win'].refresh()
 
-    def calc_pos(self, win_index) -> tuple:
+    def calc_pos(self, win_index) -> tuple:        
         if self.screen_height >= self.BAR_ROWS and self.screen_width >= self.BAR_COLS:
-            if win_index < self.bar_height_amount:
-                return (win_index * self.BAR_ROWS, 0)
+            if win_index < self.bar_height_amount * self.bar_width_amount:
+                y_pos = (win_index // self.bar_width_amount) * self.BAR_ROWS
+                x_pos = (win_index % self.bar_width_amount) * self.BAR_COLS
+                return (y_pos, x_pos)
             else:
-                tmp_row = win_index // self.bar_height_amount
-                if tmp_row < self.bar_width_amount:
-                    return ((win_index % self.bar_height_amount) * self.BAR_ROWS, tmp_row * self.BAR_COLS)
-                else:
-                    return None
+                return None
         else:
             return None
 
@@ -144,7 +142,6 @@ class StreamVisualizator:
                     i.stop()
                     i.join()
                 self.screen.keypad(False)
-                # curses.nocbreak()
                 curses.echo()
                 curses.endwin()
 
