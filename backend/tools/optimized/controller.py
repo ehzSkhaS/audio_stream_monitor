@@ -16,13 +16,14 @@ class Controller:
         self.__sv = stream_visualizator.StreamVisualizator(screen)
         self.__jump = 0
         self.__thread_pool = []
-        self.__source = []
 
     def load_data(self) -> None:
         try:
             with open(f'{os.path.dirname(__file__)}/data.csv', newline='') as source_data:
-                for row in csv.DictReader(source_data):
-                    self.__source.append('https://icecast.teveo.cu/' + row['url'])
+                rows = [x for x in csv.DictReader(source_data)]
+                rows = reversed(rows)
+                for row in rows:
+                    self.__sv.lower_url_stack.put(f'https://icecast.teveo.cu/{row["url"]}')
         except IOError as error:
             self.__screen.addstr(0, 0, str(error))
             self.__screen.refresh()
@@ -30,19 +31,21 @@ class Controller:
             sys.exit(0)
 
     def set_data(self, source) -> None:
-        self.__source = source
+        for i in reversed(source):
+            self.__sv.lower_url_stack.append(i)
 
     def set_jump(self, jump) -> None:
         self.__jump = jump
 
     def deploy_draw_threads(self) -> None:
         win_index = 0
-        for i in self.__source:
+        while self.__sv.lower_url_stack.qsize():
             win_pos = self.__sv.calc_pos(win_index)
             if win_pos:
-                self.__screen.addstr(win_pos[0], win_pos[1], f'Loading... {i}')
+                url = self.__sv.lower_url_stack.get()
+                self.__screen.addstr(win_pos[0], win_pos[1], f'Loading... {url}')
                 self.__screen.refresh()
-                self.__sv.create_win(win_pos[0], win_pos[1], i)
+                self.__sv.create_win(win_pos[0], win_pos[1], url)
                 dt = draw_thread.DrawThread(self.__sv, len(self.__sv.win_data) - 1)
                 self.__thread_pool.append(dt)
                 self.__thread_pool[-1].start()

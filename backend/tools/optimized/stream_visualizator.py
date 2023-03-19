@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import queue
 import curses
 import ffmpeg_filter
 
@@ -9,8 +10,8 @@ class StreamVisualizator:
     BAR_ROWS = 5
     BAR_COLS = 98
     PEAK_CH_NAME = ('peak_ch1', 'peak_ch2')
-    UP = -1
-    DOWN = 1
+    UP = 1
+    DOWN = 0
 
     def __init__(self, screen) -> None:
         screen.keypad(True)
@@ -20,9 +21,10 @@ class StreamVisualizator:
         self.screen_height, self.screen_width = screen.getmaxyx()
         self.bar_height_amount = self.screen_height // self.BAR_ROWS
         self.bar_width_amount = self.screen_width // self.BAR_COLS
+        self.upper_url_stack = queue.LifoQueue()
+        self.lower_url_stack = queue.LifoQueue()
         curses.curs_set(0)
         curses.noecho()
-        # curses.cbreak()
         curses.start_color()
         curses.use_default_colors()
 
@@ -46,18 +48,14 @@ class StreamVisualizator:
         url = win_url_dict['url']
         ch_peak_sample = win_url_dict['peaks']
 
-        # for i in self.ffmpeg.ffmpeg_peak_level(data['url']):
-        win.addstr(0, 28, url)
-        win.addstr(1, 18, '-70 dB')
-        win.addstr(1, 70, '-18 dB')
-        win.addstr(1, 82, '-6 dB')
-
         if data == 404:
             msg = 'ERROR: 404 Not Found'
+            win.erase()
             win.addstr(2, round(48 - len(msg) / 2), msg)
             win.addstr(3, 33, 'Reconnecting every 10 sec...')
         elif data == 500:
             msg = 'ERROR: 500 Internal Server Error'
+            win.erase()
             win.addstr(2, round(48 - len(msg) / 2), msg)
             win.addstr(3, 33, 'Reconnecting every 10 sec...')
         else:
@@ -116,13 +114,18 @@ class StreamVisualizator:
                 else:
                     win.addstr(k + 2, 0, 'SILENCE')
 
+        win.addstr(0, 28, url)
+        win.addstr(1, 18, '-70 dB')
+        win.addstr(1, 70, '-18 dB')
+        win.addstr(1, 82, '-6 dB')
+
     def win_refresh(self) -> None:
         while len(self.win_data):
             for i in self.win_data:
                 if i['win'].is_wintouched():
                     i['win'].refresh()
 
-    def calc_pos(self, win_index) -> tuple:        
+    def calc_pos(self, win_index) -> tuple:
         if self.screen_height >= self.BAR_ROWS and self.screen_width >= self.BAR_COLS:
             if win_index < self.bar_height_amount * self.bar_width_amount:
                 y_pos = (win_index // self.bar_width_amount) * self.BAR_ROWS
@@ -139,12 +142,24 @@ class StreamVisualizator:
             if ch == 0x1b or ch == 0x51 or ch == 0x71:
                 for i in thread_pool:
                     self.win_data.remove(i.get_win())
+                    if i.paused():
+                        i.play()
                     i.stop()
                     i.join()
                 self.screen.keypad(False)
                 curses.echo()
                 curses.endwin()
+                break
+            elif ch == curses.KEY_UP:
+                self.scroll(thread_pool, self.UP)
+            elif ch == curses.KEY_DOWN:
+                self.scroll(thread_pool, self.DOWN)
 
-    def scroll(self, scroll_dir) -> None:
-        for i in self.win_list:
-            i.scroll(scroll_dir)
+    def scroll(self, thread_pool, scroll_dir) -> None:
+        pass
+        # if scroll_dir and self.lower_url_stack.qsize():
+        #     index = 0
+        #     for t in thread_pool:
+        #         t_y, t_x = t.get_win_pos()
+        #         if t_y == index * self.bar_height_amount:
+        #             if not index:
