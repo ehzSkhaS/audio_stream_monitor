@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import threading
 
+import ffmpeg_filter
+
 
 class DrawThread(threading.Thread):
     def __init__(self, stream_visualizator_obj, win_data_index) -> None:
@@ -35,14 +37,15 @@ class DrawThread(threading.Thread):
         self.__exec_block()
 
     def __exec_block(self) -> None:
-        for data in self.__svo.ffmpeg.ffmpeg_peak_level(self.__win_url_dict['url']):
+        sub_p = []
+        for data in ffmpeg_filter.ffmpeg_peak_level(sub_p, self.__win_url_dict['url']):
             if self.stopped():
-                data[0].terminate()
+                sub_p[0].terminate()
                 break
-            self.__svo.fill_win(self.__win_url_dict, data[1])
-            if data[1] == 404 or data[1] == 500:
+            self.__svo.fill_win(self.__win_url_dict, data)
+            if data == 404 or data == 500:
                 self.pause()
-                data[0].terminate()
+                sub_p[0].terminate()
                 break
         if self.paused():
             self.__pause.wait(10.0)

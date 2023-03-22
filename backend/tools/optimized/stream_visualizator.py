@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import queue
 import curses
-import ffmpeg_filter
 
 
 class StreamVisualizator:
@@ -16,7 +15,6 @@ class StreamVisualizator:
     def __init__(self, screen) -> None:
         screen.keypad(True)
         self.win_data = []
-        self.ffmpeg = ffmpeg_filter.FFmpegFilter()
         self.screen = screen
         self.screen_height, self.screen_width = screen.getmaxyx()
         self.bar_height_amount = self.screen_height // self.BAR_ROWS
