@@ -10,13 +10,13 @@ class DrawThread(threading.Thread):
         self.__stop = threading.Event()
         self.__pause = threading.Event()
         self.__svo = stream_visualizator_obj
-        self.__win_url_dict = stream_visualizator_obj.win_data[win_data_index]
+        self.__win_data_dict = stream_visualizator_obj.win_data[win_data_index]
 
     def get_win_pos(self) -> tuple:
-        return self.__win_url_dict['win'].getbegyx()
+        return self.__win_data_dict['win'].getbegyx()
 
-    def get_win(self) -> dict:
-        return self.__win_url_dict
+    def get_win_data_dict(self) -> dict:
+        return self.__win_data_dict
 
     def stop(self) -> None:
         self.__stop.set()
@@ -38,11 +38,11 @@ class DrawThread(threading.Thread):
 
     def __exec_block(self) -> None:
         sub_p = []
-        for data in ffmpeg_filter.ffmpeg_peak_level(sub_p, self.__win_url_dict['url']):
+        for data in ffmpeg_filter.ffmpeg_peak_level(sub_p, self.__win_data_dict['url']):
             if self.stopped():
                 sub_p[0].terminate()
                 break
-            self.__svo.fill_win(self.__win_url_dict, data)
+            self.__svo.fill_win(self.__win_data_dict, data)
             if data == 404 or data == 500:
                 self.pause()
                 sub_p[0].terminate()

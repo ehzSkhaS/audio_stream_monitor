@@ -30,7 +30,7 @@ class StreamVisualizator:
             curses.init_pair(i + 1, i, -1)
 
     def create_win(self, y_pos, x_pos, url) -> dict:
-        win_url_dict = {
+        win_data_dict = {
             'win': curses.newwin(self.BAR_ROWS, self.BAR_COLS, y_pos, x_pos),
             'url': url,
             'peaks': {
@@ -38,13 +38,13 @@ class StreamVisualizator:
                 1: [0, 0]
             }
         }
-        self.win_data.append(win_url_dict)
-        return win_url_dict
+        self.win_data.append(win_data_dict)
+        return win_data_dict
 
-    def fill_win(self, win_url_dict, data) -> None:
-        win = win_url_dict['win']
-        url = win_url_dict['url']
-        ch_peak_sample = win_url_dict['peaks']
+    def fill_win(self, win_data_dict, data) -> None:
+        win = win_data_dict['win']
+        url = win_data_dict['url']
+        ch_peak_sample = win_data_dict['peaks']
 
         if data == 404:
             msg = 'ERROR: 404 Not Found'
@@ -139,7 +139,11 @@ class StreamVisualizator:
             ch = self.screen.getch()
             if ch == 0x1b or ch == 0x51 or ch == 0x71:
                 for i in thread_pool:
-                    self.win_data.remove(i.get_win())
+                    wd = i.get_win_data_dict()
+                    wd['win'].untouchwin()
+                    wd['win'].addstr(1, 44, 'CLOSING...')
+                    wd['win'].refresh()
+                    self.win_data.remove(wd)
                     if i.paused():
                         i.play()
                     i.stop()
