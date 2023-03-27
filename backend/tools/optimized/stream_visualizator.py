@@ -56,6 +56,11 @@ class StreamVisualizator:
             win.erase()
             win.addstr(2, round(48 - len(msg) / 2), msg)
             win.addstr(3, 33, 'Reconnecting every 10 sec...')
+        elif data == 502:
+            msg = 'ERROR: 502 Bad Gateway'
+            win.erase()
+            win.addstr(2, round(48 - len(msg) / 2), msg)
+            win.addstr(3, 33, 'Reconnecting every 10 sec...')
         else:
             for k in range(2):
                 if data[self.PEAK_CH_NAME[k]] != '-inf':

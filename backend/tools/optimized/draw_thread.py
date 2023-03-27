@@ -43,7 +43,7 @@ class DrawThread(threading.Thread):
                 sub_p[0].terminate()
                 break
             self.__svo.fill_win(self.__win_data_dict, data)
-            if data == 404 or data == 500:
+            if data == 404 or data == 500 or data == 502:
                 self.pause()
                 sub_p[0].terminate()
                 break

@@ -70,10 +70,13 @@ def __ffmpeg_output_capture(cmd, sub_p, url) -> tuple:
 def __error_detect(line):
     e1 = line.find('HTTP error 404')
     e2 = line.find('Error in the pull function')
+    e3 = line.find('HTTP error 502 Bad Gateway')
     if e1 != -1:
         return 404
     elif e2 != -1:
         return 500
+    elif e3 != -1:
+        return 502
 
 
 def ffmpeg_peak_level(sub_p, url) -> tuple:
