@@ -41,81 +41,70 @@ class StreamVisualizator:
         self.win_data.append(win_data_dict)
         return win_data_dict
 
+    def print_error(self, win, msg):
+        win.erase()
+        win.addstr(2, round(48 - len(msg) / 2), msg)
+        win.addstr(3, 33, 'Reconnecting every 10 sec...')
+
     def fill_win(self, win_data_dict, data) -> None:
         win = win_data_dict['win']
         url = win_data_dict['url']
         ch_peak_sample = win_data_dict['peaks']
 
-        if data == 404:
-            msg = 'ERROR: 404 Not Found'
-            win.erase()
-            win.addstr(2, round(48 - len(msg) / 2), msg)
-            win.addstr(3, 33, 'Reconnecting every 10 sec...')
-        elif data == 500:
-            msg = 'ERROR: 500 Internal Server Error'
-            win.erase()
-            win.addstr(2, round(48 - len(msg) / 2), msg)
-            win.addstr(3, 33, 'Reconnecting every 10 sec...')
-        elif data == 502:
-            msg = 'ERROR: 502 Bad Gateway'
-            win.erase()
-            win.addstr(2, round(48 - len(msg) / 2), msg)
-            win.addstr(3, 33, 'Reconnecting every 10 sec...')
-        else:
-            for k in range(2):
-                if data[self.PEAK_CH_NAME[k]] != '-inf':
-                    str_ch = data[self.PEAK_CH_NAME[k]]
-                    int_ch = round(float(str_ch))
+        for k in range(2):
+            if data[self.PEAK_CH_NAME[k]] != '-inf':
+                str_ch = data[self.PEAK_CH_NAME[k]]
+                int_ch = round(float(str_ch))
 
-                    if int_ch > 0:
-                        int_ch = 0
+                if int_ch > 0:
+                    int_ch = 0
 
-                    if int_ch <= -70:
-                        int_ch = 0
-                    else:
-                        int_ch += 70
-
-                    ch_info = str_ch + ((11 - len(str_ch)) * ' ') + 'CH' + str(k + 1) + ' dB '
-                    len_ch_info = len(ch_info)
-                    bar_yellow = ''
-                    bar_green = ''
-                    bar_red = ''
-                    bs_ch = self.BAR_SAMPLE[:int_ch]
-                    bar_blank = self.BAR_EMPTY_SAMPLE[int_ch:]
-
-                    if int_ch == 70:
-                        bar_yellow = bs_ch[:52]
-                        bar_green = bs_ch[52:64]
-                        bar_red = bs_ch[64:70]
-                    elif int_ch >= 64:
-                        bar_yellow = bs_ch[:52]
-                        bar_green = bs_ch[52:64]
-                        bar_red = bs_ch[64:int_ch]
-                    elif int_ch >= 52:
-                        bar_yellow = bs_ch[:52]
-                        bar_green = bs_ch[52:int_ch]
-                    else:
-                        bar_yellow = bs_ch[:int_ch]
-
-                    win.addstr(k + 2, len_ch_info + 70, '|')
-                    win.addstr(k + 2, 0, ch_info)
-                    win.addstr(k + 2, len_ch_info, bar_yellow, curses.color_pair(228) | curses.A_BOLD)
-                    win.addstr(bar_green, curses.color_pair(48) | curses.A_BOLD)
-                    win.addstr(bar_red, curses.color_pair(198) | curses.A_BOLD)
-                    win.addstr(bar_blank)
-
-                    if int_ch > ch_peak_sample[k][0]:
-                        ch_peak_sample[k][0] = int_ch
-                        ch_peak_sample[k][1] = 40
-                    elif ch_peak_sample[k][1]:
-                        win.addstr(k + 2, len_ch_info + ch_peak_sample[k][0], '|', curses.color_pair(46) | curses.A_BOLD)
-                        win.addstr(k + 2, 90, '-{:02} dB  '.format((ch_peak_sample[k][0] - 70) * - 1), curses.color_pair(46) | curses.A_BOLD)
-                        ch_peak_sample[k][1] -= 1
-                    else:
-                        ch_peak_sample[k][0] = 0
-                        win.addstr(k + 2, 90, '-{:02} dB  '.format((70)), curses.color_pair(46) | curses.A_BOLD)
+                if int_ch <= -70:
+                    int_ch = 0
                 else:
-                    win.addstr(k + 2, 0, 'SILENCE')
+                    int_ch += 70
+
+                ch_info = str_ch + ((11 - len(str_ch)) * ' ') + 'CH' + str(k + 1) + ' dB '
+                len_ch_info = len(ch_info)
+                bar_yellow = ''
+                bar_green = ''
+                bar_red = ''
+                bs_ch = self.BAR_SAMPLE[:int_ch]
+                bar_blank = self.BAR_EMPTY_SAMPLE[int_ch:]
+
+                if int_ch == 70:
+                    bar_yellow = bs_ch[:52]
+                    bar_green = bs_ch[52:64]
+                    bar_red = bs_ch[64:70]
+                elif int_ch >= 64:
+                    bar_yellow = bs_ch[:52]
+                    bar_green = bs_ch[52:64]
+                    bar_red = bs_ch[64:int_ch]
+                elif int_ch >= 52:
+                    bar_yellow = bs_ch[:52]
+                    bar_green = bs_ch[52:int_ch]
+                else:
+                    bar_yellow = bs_ch[:int_ch]
+
+                win.addstr(k + 2, len_ch_info + 70, '|')
+                win.addstr(k + 2, 0, ch_info)
+                win.addstr(k + 2, len_ch_info, bar_yellow, curses.color_pair(228) | curses.A_BOLD)
+                win.addstr(bar_green, curses.color_pair(48) | curses.A_BOLD)
+                win.addstr(bar_red, curses.color_pair(198) | curses.A_BOLD)
+                win.addstr(bar_blank)
+
+                if int_ch > ch_peak_sample[k][0]:
+                    ch_peak_sample[k][0] = int_ch
+                    ch_peak_sample[k][1] = 40
+                elif ch_peak_sample[k][1]:
+                    win.addstr(k + 2, len_ch_info + ch_peak_sample[k][0], '|', curses.color_pair(46) | curses.A_BOLD)
+                    win.addstr(k + 2, 90, '-{:02} dB  '.format((ch_peak_sample[k][0] - 70) * - 1), curses.color_pair(46) | curses.A_BOLD)
+                    ch_peak_sample[k][1] -= 1
+                else:
+                    ch_peak_sample[k][0] = 0
+                    win.addstr(k + 2, 90, '-{:02} dB  '.format((70)), curses.color_pair(46) | curses.A_BOLD)
+            else:
+                win.addstr(k + 2, 0, 'SILENCE')
 
         win.addstr(0, 28, url)
         win.addstr(1, 18, '-70 dB')

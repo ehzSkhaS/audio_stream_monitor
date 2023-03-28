@@ -38,15 +38,19 @@ class DrawThread(threading.Thread):
 
     def __exec_block(self) -> None:
         sub_p = []
-        for data in ffmpeg_filter.ffmpeg_peak_level(sub_p, self.__win_data_dict['url']):
-            if self.stopped():
-                sub_p[0].terminate()
-                break
-            self.__svo.fill_win(self.__win_data_dict, data)
-            if data == 404 or data == 500 or data == 502:
-                self.pause()
-                sub_p[0].terminate()
-                break
-        if self.paused():
+        try:
+            for data in ffmpeg_filter.ffmpeg_peak_level(sub_p, self.__win_data_dict['url']):
+                if self.stopped():
+                    sub_p[0].terminate()
+                    break
+                self.__svo.fill_win(self.__win_data_dict, data)
+        except (ffmpeg_filter.FFmpeg_HTTP_404, ffmpeg_filter.FFmpeg_HTTP_500, ffmpeg_filter.FFmpeg_HTTP_502) as e:
+            self.__svo.print_error(self.__win_data_dict['win'], str(e))
+            self.pause()
+            sub_p[0].terminate()
+
+        if self.stopped():
+            sub_p[0].terminate()
+        elif self.paused():
             self.__pause.wait(10.0)
             self.__exec_block()
