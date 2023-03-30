@@ -9,8 +9,6 @@ class StreamVisualizator:
     BAR_ROWS = 5
     BAR_COLS = 98
     PEAK_CH_NAME = ('peak_ch1', 'peak_ch2')
-    UP = 1
-    DOWN = 0
 
     def __init__(self, screen) -> None:
         screen.keypad(True)
@@ -19,7 +17,7 @@ class StreamVisualizator:
         self.screen_height, self.screen_width = screen.getmaxyx()
         self.bar_height_amount = self.screen_height // self.BAR_ROWS
         self.bar_width_amount = self.screen_width // self.BAR_COLS
-        self.upper_url_stack = queue.LifoQueue()
+        self.upper_url_stack = queue.Queue()
         self.lower_url_stack = queue.LifoQueue()
         curses.curs_set(0)
         curses.noecho()
@@ -41,8 +39,10 @@ class StreamVisualizator:
         self.win_data.append(win_data_dict)
         return win_data_dict
 
-    def print_error(self, win, msg):
+    def error_win(self, win_data_dict, msg):
+        win = win_data_dict['win']
         win.erase()
+        win.addstr(0, 28, win_data_dict['url'])
         win.addstr(2, round(48 - len(msg) / 2), msg)
         win.addstr(3, 33, 'Reconnecting every 10 sec...')
 
@@ -111,13 +111,18 @@ class StreamVisualizator:
         win.addstr(1, 70, '-18 dB')
         win.addstr(1, 82, '-6 dB')
 
-    def win_refresh(self) -> None:
+    def refresh_win(self) -> None:
         while len(self.win_data):
             for i in self.win_data:
                 if i['win'].is_wintouched():
                     i['win'].refresh()
 
-    def calc_pos(self, win_index) -> tuple:
+    def close_win(self, win) -> None:
+        win.untouchwin()
+        win.addstr(1, 44, 'CLOSING...')
+        win.refresh()
+
+    def position_win(self, win_index) -> tuple:
         if self.screen_height >= self.BAR_ROWS and self.screen_width >= self.BAR_COLS:
             if win_index < self.bar_height_amount * self.bar_width_amount:
                 y_pos = (win_index // self.bar_width_amount) * self.BAR_ROWS
@@ -128,34 +133,17 @@ class StreamVisualizator:
         else:
             return None
 
-    def capture_input(self, thread_pool) -> None:
-        while True:
-            ch = self.screen.getch()
-            if ch == 0x1b or ch == 0x51 or ch == 0x71:
-                for i in thread_pool:
-                    wd = i.get_win_data_dict()
-                    wd['win'].untouchwin()
-                    wd['win'].addstr(1, 44, 'CLOSING...')
-                    wd['win'].refresh()
-                    self.win_data.remove(wd)
-                    if i.paused():
-                        i.play()
-                    i.stop()
-                    i.join()
-                self.screen.keypad(False)
-                curses.echo()
-                curses.endwin()
-                break
-            elif ch == curses.KEY_UP:
-                self.scroll(thread_pool, self.UP)
-            elif ch == curses.KEY_DOWN:
-                self.scroll(thread_pool, self.DOWN)
+    def find_win(self, y_pos, x_pos) -> dict:
+        for win_data_dict in self.win_data:
+            if (y_pos, x_pos) == win_data_dict['win'].getbegyx():
+                return win_data_dict
 
-    def scroll(self, thread_pool, scroll_dir) -> None:
-        pass
-        # if scroll_dir and self.lower_url_stack.qsize():
-        #     index = 0
-        #     for t in thread_pool:
-        #         t_y, t_x = t.get_win_pos()
-        #         if t_y == index * self.bar_height_amount:
-        #             if not index:
+    def getmaxyx_win(self) -> tuple:
+        max_y, max_x = 0, 0
+        for win_data_dict in self.win_data:
+            tmp_y, tmp_x = win_data_dict['win'].getbegyx()
+            if tmp_y > max_y:
+                max_y = tmp_y
+            if tmp_x > max_x:
+                max_x = tmp_x
+        return (max_y, max_x)

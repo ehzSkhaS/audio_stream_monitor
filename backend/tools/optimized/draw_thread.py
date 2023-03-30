@@ -12,9 +12,6 @@ class DrawThread(threading.Thread):
         self.__svo = stream_visualizator_obj
         self.__win_data_dict = stream_visualizator_obj.win_data[win_data_index]
 
-    def get_win_pos(self) -> tuple:
-        return self.__win_data_dict['win'].getbegyx()
-
     def get_win_data_dict(self) -> dict:
         return self.__win_data_dict
 
@@ -45,7 +42,7 @@ class DrawThread(threading.Thread):
                     break
                 self.__svo.fill_win(self.__win_data_dict, data)
         except (ffmpeg_filter.FFmpeg_HTTP_404, ffmpeg_filter.FFmpeg_HTTP_500, ffmpeg_filter.FFmpeg_HTTP_502) as e:
-            self.__svo.print_error(self.__win_data_dict['win'], str(e))
+            self.__svo.error_win(self.__win_data_dict, str(e))
             self.pause()
             sub_p[0].terminate()
 
