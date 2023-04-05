@@ -1,5 +1,45 @@
 #!/usr/bin/env python3
+import queue
+import threading
 import subprocess
+import warnings
+
+
+class NonBlockReader:
+    def __init__(self, data):
+        self.__d = data
+        self.__q = queue.Queue()
+        self.__stop = threading.Event()
+
+        def __fill_queue(data, queue):
+            while not self.__stop.is_set():
+                line = data.readline()
+                if not line:
+                    continue
+                queue.put(line)
+
+        self.__t = threading.Thread(
+            target=__fill_queue,
+            args=(self.__d, self.__q),
+            daemon=True
+        )
+        self.__t.start()
+
+    def stop(self) -> None:
+        self.__stop.set()
+        self.__t.join(0.1)
+
+    def stopped(self) -> bool:
+        return self.__stop.is_set()
+
+    def readline(self, timeout=None):
+        try:
+            return self.__q.get(
+                block=timeout is not None,
+                timeout=timeout
+            )
+        except queue.Empty:
+            return None
 
 
 class FFmpeg_HTTP_404(Exception):
@@ -8,6 +48,14 @@ class FFmpeg_HTTP_404(Exception):
 
     def __str__(self) -> str:
         return "ERROR 404: Stream Not Found"
+
+
+class FFmpeg_HTTP_408(Exception):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def __str__(self) -> str:
+        return "ERROR 408: Request Timeout"
 
 
 class FFmpeg_HTTP_500(Exception):
@@ -26,6 +74,14 @@ class FFmpeg_HTTP_502(Exception):
         return "ERROR 502: Bad Gateway"
 
 
+class FFmpeg_HTTP_522(Exception):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def __str__(self) -> str:
+        return "ERROR 522: Connection Timed Out"
+
+
 __ffmpeg_cmd_filters = {
     'peak_level': [
         'ffmpeg',
@@ -34,7 +90,9 @@ __ffmpeg_cmd_filters = {
         '-hide_banner',
         '-y', '-vn', '-sn', '-dn',
         '-af',
-        'astats=metadata=1:reset=1,ametadata=mode=print:key=lavfi.astats.1.Peak_level,ametadata=mode=print:key=lavfi.astats.2.Peak_level',
+        'astats=metadata=1:reset=1,\
+        ametadata=mode=print:key=lavfi.astats.1.Peak_level,\
+        ametadata=mode=print:key=lavfi.astats.2.Peak_level',
         '-f', 'null',
         '-'
     ],
@@ -45,7 +103,9 @@ __ffmpeg_cmd_filters = {
         '-hide_banner',
         '-y', '-vn', '-sn', '-dn',
         '-af',
-        'astats=metadata=1:reset=1,ametadata=mode=print:key=lavfi.astats.1.Max_level,ametadata=mode=print:key=lavfi.astats.2.Max_level',
+        'astats=metadata=1:reset=1,\
+        ametadata=mode=print:key=lavfi.astats.1.Max_level,\
+        ametadata=mode=print:key=lavfi.astats.2.Max_level',
         '-f', 'null',
         '-'
     ],
@@ -77,30 +137,44 @@ def __ffmpeg_output_capture(cmd, sub_p, url) -> tuple:
     mod_cmd = cmd
     mod_cmd[3] = url
 
-    with subprocess.Popen(
+    p = subprocess.Popen(
         mod_cmd,
         stderr=subprocess.PIPE,
         bufsize=1,
-        universal_newlines=True
-    ) as p:
-        sub_p.append(p)
-        while True:
-            line = p.stderr.readline()
-            if not line:
-                break
-            yield line
+        universal_newlines=True,
+        text=True
+    )
+    nbr = NonBlockReader(p.stderr)
+    sub_p.append(p)
+    sub_p.append(nbr)
+    while p.poll() is None:
+        line = nbr.readline(0.1)
+        if not line:
+            warnings.filterwarnings(
+                "ignore",
+                message="WARNING: Empty Buffer",
+                category=UserWarning
+            )
+            continue
+        yield line
 
 
 def __error_detect(line):
     e1 = line.find('HTTP error 404')
-    e2 = line.find('Error in the pull function')
-    e3 = line.find('HTTP error 502 Bad Gateway')
+    e2 = line.find('Temporary failure in name resolution')
+    e3 = line.find('Error in the pull function')
+    e4 = line.find('HTTP error 502 Bad Gateway')
+    e5 = line.find('Connection timed out')
     if e1 != -1:
         raise FFmpeg_HTTP_404()
     elif e2 != -1:
-        raise FFmpeg_HTTP_500()
+        raise FFmpeg_HTTP_408()
     elif e3 != -1:
+        raise FFmpeg_HTTP_500()
+    elif e4 != -1:
         raise FFmpeg_HTTP_502()
+    elif e5 != -1:
+        raise FFmpeg_HTTP_522()
 
 
 def ffmpeg_peak_level(sub_p, url) -> tuple:

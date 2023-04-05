@@ -43,8 +43,19 @@ class StreamVisualizator:
         win = win_data_dict['win']
         win.erase()
         win.addstr(0, 28, win_data_dict['url'])
-        win.addstr(2, round(48 - len(msg) / 2), msg)
-        win.addstr(3, 33, 'Reconnecting every 10 sec...')
+        win.addstr(2, round(48 - len(msg) / 2), msg, curses.color_pair(198))
+        win.touchwin()
+
+    def warning_win(self, win_data_dict, msg):
+        win = win_data_dict['win']
+        win.erase()
+        win.addstr(0, 28, win_data_dict['url'])
+        win.addstr(2, round(48 - len(msg) / 2), msg, curses.color_pair(228))
+        win.touchwin()
+
+    def timeout_report(self, timeout, win_data_dict):
+        win = win_data_dict['win']
+        win.addstr(3, 33, f'Reconnecting in {timeout} sec...')
 
     def fill_win(self, win_data_dict, data) -> None:
         win = win_data_dict['win']
@@ -118,9 +129,9 @@ class StreamVisualizator:
                     i['win'].refresh()
 
     def close_win(self, win) -> None:
-        win.untouchwin()
         win.addstr(1, 44, 'CLOSING...')
         win.refresh()
+        win.untouchwin()
 
     def position_win(self, win_index) -> tuple:
         if self.screen_height >= self.BAR_ROWS and self.screen_width >= self.BAR_COLS:
