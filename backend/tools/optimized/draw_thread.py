@@ -82,15 +82,20 @@ class DrawThread(threading.Thread):
         sub_p = []
         try:
             with warnings.catch_warnings(record=True) as w:
-                for data in ffmpeg_filter.ffmpeg_peak_level(sub_p, self.__win_data_dict['url']):
-                    if self.__stop.is_set():  # or not self.__unpause.is_set():
-                        break
-
-                    self.__svo.fill_win(self.__win_data_dict, data)
-
+                data = ffmpeg_filter.ffmpeg_peak_level(sub_p, self.__win_data_dict['url'])
+                while not self.__stop.is_set():
                     if len(w) > 0:
                         for warning in w:
                             self.__svo.warning_win(self.__win_data_dict, str(warning.message))
+
+                    self.__svo.fill_win(self.__win_data_dict, next(data))
+
+                # for data in ffmpeg_filter.ffmpeg_peak_level(sub_p, self.__win_data_dict['url']):
+                #     if self.__stop.is_set():  # or not self.__unpause.is_set():
+                #         break
+
+                #     self.__svo.fill_win(self.__win_data_dict, data)
+
         except (ffmpeg_filter.FFmpeg_HTTP_404,
                 ffmpeg_filter.FFmpeg_HTTP_408,
                 ffmpeg_filter.FFmpeg_HTTP_500,
@@ -104,14 +109,14 @@ class DrawThread(threading.Thread):
 
         if self.__stop.is_set():
             sub_p[0].kill()
-            sub_p[1].stop()
+            # sub_p[1].stop()
 
             if self.__report.is_alive():
                 self.__report.stop()
                 self.__report.join(0.1)
         elif not self.__unpause.is_set():
             sub_p[0].kill()
-            sub_p[1].stop()
+            # sub_p[1].stop()
             self.__unpause.wait(10.0)
 
             if self.__report.is_alive():

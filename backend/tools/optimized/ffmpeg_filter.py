@@ -14,8 +14,10 @@ class NonBlockReader:
         def __fill_queue(data, queue):
             while not self.__stop.is_set():
                 line = data.readline()
+
                 if not line:
                     continue
+
                 queue.put(line)
 
         self.__t = threading.Thread(
@@ -144,19 +146,32 @@ def __ffmpeg_output_capture(cmd, sub_p, url) -> tuple:
         universal_newlines=True,
         text=True
     )
+
     nbr = NonBlockReader(p.stderr)
     sub_p.append(p)
-    sub_p.append(nbr)
+    empty_buffer = 0
+
     while p.poll() is None:
         line = nbr.readline(0.1)
+
         if not line:
+            if empty_buffer == 100:
+                raise FFmpeg_HTTP_408()
+
+            empty_buffer += 1
+
             warnings.filterwarnings(
                 "ignore",
                 message="WARNING: Empty Buffer",
                 category=UserWarning
             )
+
             continue
+
+        empty_buffer = 0
         yield line
+
+    nbr.stop()
 
 
 def __error_detect(line):
@@ -165,6 +180,7 @@ def __error_detect(line):
     e3 = line.find('Error in the pull function')
     e4 = line.find('HTTP error 502 Bad Gateway')
     e5 = line.find('Connection timed out')
+
     if e1 != -1:
         raise FFmpeg_HTTP_404()
     elif e2 != -1:
@@ -187,6 +203,7 @@ def ffmpeg_peak_level(sub_p, url) -> tuple:
         __error_detect(i)
         p1 = i.find('1.Peak_level=')
         p2 = i.find('2.Peak_level=')
+
         if p1 != -1:
             peaks['peak_ch1'] = i[p1 + 13: -1]
         if p2 != -1:
@@ -204,6 +221,7 @@ def ffmpeg_max_level(sub_p, url) -> tuple:
         __error_detect(i)
         m1 = i.find('1.Max_level=')
         m2 = i.find('2.Max_level=')
+
         if m1 != -1:
             maxs['max_ch1'] = i[m1 + 12: -1]
         if m2 != -1:
@@ -215,6 +233,7 @@ def ffmpeg_volume_detect(sub_p, url):
     for i in __ffmpeg_output_capture(__ffmpeg_cmd_filters.get('volume_detect'), sub_p, url):
         __error_detect(i)
         li = i.find('mean_volume: ')
+
         if li != -1:
             yield i[li + 13: -4]
 
@@ -227,6 +246,7 @@ def ffmpeg_ebur128(sub_p, url) -> dict:
         s = k.find('S: ')
         i = k.find('I: ')
         l = k.find('LRA: ')
+
         if t != -1 and m != -1 and s != -1 and i != -1 and l != -1:
             r_dict = {
                 'target': k[t + 7: m - 4],
