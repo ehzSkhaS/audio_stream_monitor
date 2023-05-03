@@ -44,14 +44,12 @@ class StreamVisualizator:
         win.erase()
         win.addstr(0, 28, win_data_dict['url'])
         win.addstr(2, round(48 - len(msg) / 2), msg, curses.color_pair(198))
-        win.touchwin()
 
     def warning_win(self, win_data_dict, msg):
         win = win_data_dict['win']
         win.erase()
         win.addstr(0, 28, win_data_dict['url'])
         win.addstr(2, round(48 - len(msg) / 2), msg, curses.color_pair(228))
-        win.touchwin()
 
     def timeout_report(self, timeout, win_data_dict):
         win = win_data_dict['win']

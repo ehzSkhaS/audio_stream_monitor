@@ -149,6 +149,7 @@ def __ffmpeg_output_capture(cmd, sub_p, url) -> tuple:
 
     nbr = NonBlockReader(p.stderr)
     sub_p.append(p)
+    sub_p.append(nbr)
     empty_buffer = 0
 
     while p.poll() is None:
@@ -158,14 +159,13 @@ def __ffmpeg_output_capture(cmd, sub_p, url) -> tuple:
             if empty_buffer == 100:
                 raise FFmpeg_HTTP_408()
 
+            if empty_buffer == 0:
+                warnings.warn(
+                    message="WARNING: Empty Buffer",
+                    category=UserWarning
+                )
+
             empty_buffer += 1
-
-            warnings.filterwarnings(
-                "ignore",
-                message="WARNING: Empty Buffer",
-                category=UserWarning
-            )
-
             continue
 
         empty_buffer = 0
